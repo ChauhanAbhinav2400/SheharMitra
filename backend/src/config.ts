@@ -18,7 +18,9 @@ function localSecret() {
   return readFileSync(path, 'utf8').trim();
 }
 const sessionSecret = process.env.SESSION_SECRET || (production ? '' : localSecret());
-const origins = list(process.env.FRONTEND_ORIGINS || 'http://localhost:3000');
+// Browsers send an Origin without a trailing slash, even when a host's
+// environment editor contains a copied homepage URL ending in '/'.
+const origins = list(process.env.FRONTEND_ORIGINS || 'http://localhost:3000').map(origin => origin.replace(/\/+$/, ''));
 const database = process.env.DATABASE_ADAPTER || 'local';
 const storage = process.env.STORAGE_ADAPTER || 'local';
 const otpProvider = process.env.OTP_PROVIDER || 'demo';

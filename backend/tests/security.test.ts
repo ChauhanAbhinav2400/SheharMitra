@@ -13,6 +13,22 @@ import { attachRealtime } from '../src/realtime.js';
 import { config } from '../src/config.js';
 import sharp from 'sharp';
 
+test('homepage origins configured with a trailing slash allow browser CORS and retain the origin boundary', async()=>{
+  const {app}=await setup();
+  const origin='http://localhost:3000';
+  const csrf=await request(app).get('/api/auth/csrf').set('Origin',origin);
+  assert.equal(csrf.status,200);
+  assert.equal(csrf.headers['access-control-allow-origin'],origin);
+  assert.equal(csrf.headers['access-control-allow-credentials'],'true');
+  assert.ok(csrf.body.csrfToken);
+  const preflight=await request(app).options('/api/auth/firebase').set('Origin',origin)
+    .set('Access-Control-Request-Method','POST').set('Access-Control-Request-Headers','content-type,x-csrf-token,idempotency-key');
+  assert.equal(preflight.status,204);
+  assert.equal(preflight.headers['access-control-allow-origin'],origin);
+  const untrusted=await request(app).get('/api/auth/csrf').set('Origin','http://localhost:3000.attacker.example');
+  assert.equal(untrusted.headers['access-control-allow-origin'],undefined);
+});
+
 test('dispute evidence is restricted to order participants and its assigned reviewer', async()=>{
   const {app,db}=await setup();
   await db.transaction(s=>{s.orders.push({id:'evidence-order',buyerId:'buyer',sellerId:'seller',assignment:undefined} as any);});
