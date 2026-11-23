@@ -1,4 +1,7 @@
 {
+  "login_method": "Choose a sign-in method",
+  "login_with_password": "Phone and password",
+  "login_with_otp": "One-time code",
   "match_area_estimate": "This match uses an approximate town or village location. Confirm the exact pickup and delivery places by call or chat.",
   "match_accept_quote": "Accept the shop's quote before looking for a delivery partner.",
   "match_shop_location": "The shop's pickup location could not be confirmed. Ask the seller to check the shop address or use current location.",
