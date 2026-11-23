@@ -1,0 +1,54 @@
+THE PROBLEM IT SOLVES
+
+Think of someone in a village who needs a tractor part, some stationery, or an item from a shop in the nearby town. The item may be available, but getting it can still mean making a separate trip. Meanwhile, someone else may already be travelling from that town toward the same village.
+
+That is the idea behind SheharMitra. I wanted to connect the person who needs something, the shopkeeper who has it, and someone already travelling along a suitable route.
+
+A buyer can find a shop, message or call the owner, and explain exactly what they need. The shopkeeper sends an itemised quote. Once the buyer accepts it, they can find a delivery partner and agree on a delivery fee. The shopkeeper packs the order, and separate pickup and delivery codes help record both handovers. Everyone involved can follow the order's progress.
+
+I started with places around Najibabad and Nagina, where town shops serve people from many nearby villages. I kept the interface in both Hindi and English and designed it for mobile use. A person can buy something today, sell through their own shop tomorrow, and also deliver an order along a trip they were already planning.
+
+For buyers, the aim is to make local shopping easier without a separate journey for every item. For shopkeepers, it creates another way to reach customers in nearby villages. For delivery partners, it offers a way to earn from an existing journey. The app also includes review and dispute-resolution tools because the process needs more than a marketplace page.
+
+The hackathon version demonstrates the complete order journey with simulated payments. No real money is collected or transferred yet; payment gateway integration is my next step.
+
+
+CHALLENGES I RAN INTO
+
+The biggest challenge was making the app work when different people used it at the same time. A buyer, shopkeeper, and delivery partner can all be looking at the same order, but each needs different information and different actions.
+
+One issue I found during manual testing was village matching. A delivery partner could publish a trip along the right route, yet the buyer would see no matches because the village was not recognised properly or the address had no reliable coordinates. I had relied too much on precise locations. I improved matching to use address details such as PIN code and town or village names as well, and made the interface explain when a match is only at the area level.
+
+Another frustrating issue appeared after deployment. Firebase would accept the OTP, but the app still could not finish signing in. The problem was in the request between the frontend and my backend, including CORS configuration. It taught me that a successful OTP response is only one part of the login process; the app still needs to establish its own session correctly.
+
+Calling also needed more testing than I expected. Ending a call and immediately calling back exposed problems with cleaning up the previous call. Slow requests made the interface feel unresponsive too. I worked on call state and cleanup, and made the interface respond immediately with a connecting state while the request continues.
+
+Some of the most useful improvements came from small things I noticed myself: the same two people should not get separate chats just because their buyer and seller roles changed, and an order being delivered should be much more obvious than a small message on the screen.
+
+Building this taught me to test complete journeys with separate accounts, not just check whether each page opens. That is where I found the issues that actually affected usability.
+
+
+HOW IT FITS THE WEB & APP INNOVATION TRACK
+
+SheharMitra uses a web app to connect something that already exists in a community: local shops, people who need their products, and people travelling between towns and villages.
+
+My focus was on bringing that everyday coordination into one usable flow. A buyer can discover a shop, talk to the owner, accept a quote, find a suitable delivery partner, and follow the handovers without moving between unrelated tools. Shopkeepers and delivery partners have their own workspaces, while admins and resolvers can review applications and handle disputes.
+
+The app works through a browser and is designed for mobile screens, with Hindi and English interfaces. Underneath, it combines realtime messaging, audio/video calling, phone authentication, address-based matching, and role-based order management.
+
+For me, the innovation is in adapting these web technologies to the way local commerce already works. Rather than requiring a dedicated delivery fleet from the beginning, SheharMitra explores how an existing journey could help complete a nearby order. The hackathon version makes that idea usable from shop discovery through delivery confirmation, with payments clearly marked as simulated.
+
+
+TECHNOLOGIES USED
+
+Next.js, React, TypeScript, JavaScript, Tailwind CSS, HTML, CSS, Node.js, Express, MongoDB, Mongoose, Firebase Authentication, Firebase Cloud Messaging, AWS S3, Socket.IO, WebRTC, Cloudflare TURN, Geoapify, Docker, Vercel, Northflank.
+
+PLATFORM
+
+Web. The mobile-friendly website is not a separate native Android or iOS application.
+
+PROJECT LINKS
+
+Live app: https://shehar-mitra-7tcq.vercel.app/en
+GitHub: https://github.com/ChauhanAbhinav2400/SheharMitra
+PDF walkthrough: https://github.com/ChauhanAbhinav2400/SheharMitra/blob/main/output/pdf/SheharMitra-Project-Walkthrough.pdf
