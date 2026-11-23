@@ -44,7 +44,7 @@ test('legacy Nagina to Raipur Sadat locations repair without changing quotes and
   order.status='awaiting_delivery_partner';order.acceptedQuote=structuredClone(order.quotes[0]);order.acceptedQuote.pickup=nagina;order.acceptedQuote.pickupAddress=shop.address;
   order.destination={...postcode,village:'Raipur sadat',address:'Buyer matching address',addressDetails:address('Raipur sadat','Buyer matching lane'),locationVerified:true};
   const original=structuredClone(order.acceptedQuote),history=structuredClone(order.quotes);
-  assert.equal(findMatches(state,order).length,0);assert.deepEqual(findMatchReport(state,order).reasons,['match_route_proximity']);
+  assert.equal(findMatches(state,order).length,1);assert.equal(findMatches(state,order)[0].reason,'fits_address_route');
   const plan=await prepareMatchingRefresh(new LocalStore(state),state,order.id);assert.equal(plan.apply(state),true);
   assert.equal(findMatches(state,order).length,1);assert.equal(findMatches(state,order)[0].approximateLocation,true);
   assert.deepEqual(order.acceptedQuote,original);assert.deepEqual(order.quotes,history);

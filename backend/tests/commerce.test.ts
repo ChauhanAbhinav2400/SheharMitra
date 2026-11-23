@@ -61,7 +61,7 @@ test('matching enforces route and timing while space is agreed with the partner'
   await db.read(s => {
     const order = s.orders[0], match = findMatches(s, order);
     assert.deepEqual(match.map(m => m.trip.id), ['trip-raipur', 'trip-raipur-replacement']);
-    assert.equal(match[0].estimate, true); assert.ok(match[0].extraKm < 3);
+    assert.equal(match[0].estimate, true); assert.ok((match[0].extraKm??Infinity) < 3);
     const trip = structuredClone(s.trips[0]); trip.capacityGrams = 1000; trip.capacityParcels = 1; trip.reservedParcels = 1; trip.maxParcelSize = 'small';
     assert.ok(matchTrip(trip, order.acceptedQuote!, order.destination));
     delete trip.capacityGrams; delete trip.capacityParcels; delete trip.maxParcelSize;

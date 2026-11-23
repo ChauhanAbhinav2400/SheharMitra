@@ -2,7 +2,8 @@ import {refreshMatchingLocations} from './domain/matching-locations.js';
 import { Router, type Request, type RequestHandler } from 'express';
 import { z } from 'zod';
 import { rateLimit } from 'express-rate-limit';
-import type { Store, Shop } from './domain/types.js';
+import type { Store, Shop, Trip } from './domain/types.js';
+import type { Address } from './location.js';
 import { CommerceService, actor, allowedOrder, participant, publicOrder, expireReservations, tripHasConfirmedDelivery } from './domain/service.js';
 import { findMatches,findMatchReport } from './domain/matching.js';
 import { pointSchema, categories } from './domain/validation.js';
@@ -16,6 +17,8 @@ const paise = z.number().int().min(0).max(100000);
 const key = (req: Request) => req.get('idempotency-key') || '';
 const orderId = (req: Request) => String(req.params.id);
 const who = (req: Request) => req.user!.id;
+const areaLabel=(address:Address|undefined,fallback:string)=>!address?fallback:address.locality.toLowerCase()===address.city.toLowerCase()?address.city:`${address.locality}, ${address.city}`;
+const tripLabels=(trip:Trip)=>({origin:areaLabel(trip.originAddress,trip.origin),destination:areaLabel(trip.destinationAddress,trip.destination)});
 const publicShop = (shop: Shop) => ({ ...shop, coordinates:undefined,addressDetails:undefined,address:undefined, image: shop.image.startsWith('/shops/') ? shop.image : `${config.publicOrigin}/api/uploads/public/${encodeURIComponent(shop.image)}`, gallery: shop.gallery.map(image => image.startsWith('/shops/') ? image : `${config.publicOrigin}/api/uploads/public/${encodeURIComponent(image)}`) });
 function setting(name: string, fallback: number) { const n = Number(process.env[name] || fallback); ensure(Number.isSafeInteger(n) && n >= 0, 'invalid_configuration', 500); return n; }
 
@@ -34,7 +37,7 @@ export function createCommerceRouter(store: Store, requireAuth: RequestHandler) 
   });
   router.get('/trips', async (_req, res) => {
     const trips = await store.read(s => s.trips.filter(t => t.available && Date.parse(t.departureAt) > Date.now() && s.users.some(u => u.id === t.partnerId && !u.banned && !isStaff(u) && u.partnerStatus === 'approved')));
-    res.set('Cache-Control', 'no-store'); res.json({ trips:trips.map(t=>({...t,route:undefined,originAddress:undefined,destinationAddress:undefined})), estimate: true });
+    res.set('Cache-Control', 'no-store'); res.json({ trips:trips.map(t=>({...t,...tripLabels(t),route:undefined,originAddress:undefined,destinationAddress:undefined})), estimate: true });
   });
   router.use(requireAuth);
   router.use((_req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
@@ -58,7 +61,7 @@ export function createCommerceRouter(store: Store, requireAuth: RequestHandler) 
   }
   router.post('/trips', async (req,res)=>res.status(201).json(await service.createTrip(who(req),await tripInput(req))));
   router.patch('/trips/:id', async (req,res)=>res.json(await service.updateTrip(who(req),orderId(req),await tripInput(req))));
-  router.get('/my-trips', async (req, res) => res.json({ trips: await store.read(s => s.trips.filter(t => t.partnerId === who(req)).map(t=>({...t,editable:Date.parse(t.departureAt)>Date.now()&&!tripHasConfirmedDelivery(s,t.id)}))) }));
+  router.get('/my-trips', async (req, res) => res.json({ trips: await store.read(s => s.trips.filter(t => t.partnerId === who(req)).map(t=>({...t,...tripLabels(t),editable:Date.parse(t.departureAt)>Date.now()&&!tripHasConfirmedDelivery(s,t.id)}))) }));
   router.patch('/trips/:id/availability', async (req, res) => {
     const { available } = z.object({ available: z.boolean() }).parse(req.body);
     res.json(await store.transaction(s => {
@@ -82,7 +85,7 @@ export function createCommerceRouter(store: Store, requireAuth: RequestHandler) 
   router.get('/orders/:id', async (req, res) => res.json(await store.transaction(s => { expireReservations(s); return { order: publicOrder(s, allowedOrder(s, orderId(req), who(req)), who(req)) }; })));
   router.get('/orders/:id/matches', async (req, res) => {await refreshMatchingLocations(store,orderId(req),who(req));res.json(await store.read(s => {
     const order = allowedOrder(s, orderId(req), who(req)); ensure(order.buyerId === who(req) || order.sellerId === who(req), 'forbidden', 403);
-    const report=findMatchReport(s,order);return { reasons:report.reasons, matches: report.matches.map(m=>({...m,extraKm:undefined,trip:{...m.trip,route:undefined,originAddress:undefined,destinationAddress:undefined}})), estimate: true };
+    const report=findMatchReport(s,order);return { reasons:report.reasons, matches: report.matches.map(m=>({...m,extraKm:undefined,trip:{...m.trip,...tripLabels(m.trip),route:undefined,originAddress:undefined,destinationAddress:undefined}})), estimate: true };
   }));});
   router.post('/orders/:id/quote', async (req, res) => {const shop=await store.read(s=>{const order=allowedOrder(s,orderId(req),who(req));ensure(order.sellerId===who(req),'forbidden',403);return s.shops.find(x=>x.id===order.shopId);});ensure(shop,'shop_not_found',404);res.json(await service.quote(who(req),orderId(req),{...req.body,pickup:shop.coordinates||null,pickupAddress:shop.address,pickupAddressDetails:shop.addressDetails,pickupResolution:shop.locationResolution}));});
   router.post('/orders/:id/accept-quote', async (req, res) => { const b = z.object({ version: z.number().int().positive(), substitutionConsent: z.boolean().default(false) }).parse(req.body); res.json(await service.acceptQuote(who(req), orderId(req), b.version, b.substitutionConsent)); });
