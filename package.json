@@ -1,0 +1,39 @@
+{
+  "name": "sheharmitra",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "overrides": {
+    "@firebase/app": "0.16.2",
+    "@firebase/app-compat": "0.5.18",
+    "@firebase/database": "1.1.5",
+    "@firebase/database-compat": "2.1.7"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,yellow \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "check:integrations": "node scripts/check-auth-turn.mjs",
+    "seed": "npm run seed -w backend",
+    "brand": "node scripts/brand/generate.mjs",
+    "lint": "eslint backend/src frontend/src backend/tests frontend/tests"
+  },
+  "devDependencies": {
+    "@firebase/database-compat": "2.1.7",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^22.18.0",
+    "concurrently": "^9.2.1",
+    "eslint": "10.15.0",
+    "sharp": "^0.34.4",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.73.0"
+  }
+}

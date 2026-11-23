@@ -1,0 +1,9 @@
+{
+  "en": {
+    "icon": { "left": 165, "top": 529, "width": 710, "height": 680 },
+    "text": { "left": 950, "top": 790, "width": 1235, "height": 190 }
+  },
+  "hi": {
+    "text": { "left": 920, "top": 695, "width": 1280, "height": 375 }
+  }
+}

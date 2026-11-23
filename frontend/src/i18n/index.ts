@@ -1,0 +1,12 @@
+import en from './en.json';
+import hi from './hi.json';
+import extraEn from './extra-en.json';
+import extraHi from './extra-hi.json';
+export type Lang = 'hi' | 'en';
+export type Dictionary = typeof en;
+export const dictionaries = {hi:{...hi,...extraHi}, en:{...en,...extraEn}};
+export const isLang = (value: string): value is Lang => value === 'hi' || value === 'en';
+export const translate = (lang: Lang, key: string) => (dictionaries[lang] as Record<string,string>)[key] || (en as Record<string,string>)[key] || key.replaceAll('_',' ');
+export const money = (paise: number) => new Intl.NumberFormat('en-IN', {style:'currency',currency:'INR',minimumFractionDigits:2}).format((paise || 0)/100);
+export const dateTime = (value: string, lang: Lang) => new Intl.DateTimeFormat(lang==='hi'?'hi-IN':'en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(new Date(value));
+export const categories = ['tractor-parts','household','stationery','clothing','food','hardware','electricals','utensils'];

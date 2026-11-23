@@ -1,0 +1,7 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {useApp} from './provider';
+import {AuthGate,PageHeading,OrderCard,EmptyState,Skeleton,ErrorState} from './ui';
+import {api} from '@/lib/api';
+import type {Order} from '@/lib/types';
+export default function OrdersScreen(){const {t,user,socket}=useApp();const [orders,setOrders]=useState<Order[]>([]),[history,setHistory]=useState(false),[loading,setLoading]=useState(true),[failed,setFailed]=useState(false),[revision,setRevision]=useState(0);useEffect(()=>{if(!user)return;let active=true;setLoading(true);api(`/orders?archived=${history}`).then(d=>{if(active){setOrders(d.orders);setFailed(false);}}).catch(()=>{if(active)setFailed(true);}).finally(()=>{if(active)setLoading(false);});const update=()=>setRevision(n=>n+1);socket?.on('order:updated',update);return()=>{active=false;socket?.off('order:updated',update);};},[user,history,revision,socket]);return <div className="container"><PageHeading title={t('orders_title')} subtitle={t('orders_sub')}/><AuthGate><div className="tabs">{[false,true].map(v=><button key={String(v)} className={history===v?'active':''} onClick={()=>setHistory(v)}>{t(v?'history':'active')}</button>)}</div><div className="stack section">{loading?<Skeleton/>:failed?<ErrorState onRetry={()=>setRevision(n=>n+1)}/>:orders.length?orders.map(o=><OrderCard key={o.id} order={o}/>):<EmptyState kind="parcel" text={t('empty_orders')}/>}</div></AuthGate></div>;}

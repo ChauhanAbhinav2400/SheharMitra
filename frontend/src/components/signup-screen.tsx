@@ -1,0 +1,9 @@
+'use client';
+import dynamic from 'next/dynamic';
+const FirebasePhone=dynamic(()=>import('./firebase-phone'),{ssr:false});
+import {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {useApp} from './provider';
+import {Button,Field} from './ui';
+import {mutate} from '@/lib/api';
+export default function SignupScreen(){const {t,lang,error,refresh}=useApp(),router=useRouter();const [step,setStep]=useState(0),[name,setName]=useState(''),[phone,setPhone]=useState(''),[password,setPassword]=useState(''),[otp,setOtp]=useState(''),[demo,setDemo]=useState(''),[busy,setBusy]=useState(false);if(process.env.NEXT_PUBLIC_AUTH_PROVIDER==='firebase')return <div className="container narrow"><FirebasePhone register/></div>;return <div className="container narrow"><section className="panel auth-card"><h1>{t('signup')}</h1><p>{t('login_sub')}</p><form className="form-stack" onSubmit={async e=>{e.preventDefault();setBusy(true);try{if(!step){const d=await mutate('/auth/otp/request',{phone});setDemo(d.demoCode||'');setStep(1);}else{await mutate('/auth/register',{name,phone,password,otp});await refresh();router.push(`/${lang}/profile`);}}catch(e){error(e);}finally{setBusy(false);}}}>{!step?<><Field label={t('name')} value={name} onChange={e=>setName(e.target.value)} autoComplete="name" minLength={2} required/><Field label={t('phone')} value={phone} onChange={e=>setPhone(e.target.value)} autoComplete="tel" inputMode="tel" pattern="[0-9]{10}" required/><Field label={t('password')} type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" minLength={10} required/></>:<>{demo&&<p className="notice">{t('demo_otp_note')} {demo}</p>}<Field label={t('otp')} value={otp} onChange={e=>setOtp(e.target.value)} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" required/></>}<Button loading={busy}>{t(step?'signup':'send_otp')}</Button></form></section></div>;}

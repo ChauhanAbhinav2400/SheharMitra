@@ -1,0 +1,51 @@
+{
+  "sourceUsed": true,
+  "sourceFiles": [
+    "source/logo-source-en.png",
+    "source/logo-source-hi.png"
+  ],
+  "fallback": false,
+  "notes": "Owner source crops were processed. Inspect proof files before release.",
+  "storefronts": [
+    {
+      "slug": "tractor-parts",
+      "name": "किसान ट्रैक्टर पार्ट्स",
+      "synthetic": true
+    },
+    {
+      "slug": "household",
+      "name": "अपना किराना",
+      "synthetic": true
+    },
+    {
+      "slug": "stationery",
+      "name": "विद्या स्टेशनरी",
+      "synthetic": true
+    },
+    {
+      "slug": "clothing",
+      "name": "रंगोली वस्त्र",
+      "synthetic": true
+    },
+    {
+      "slug": "food",
+      "name": "मधुर मिठाई भंडार",
+      "synthetic": true
+    },
+    {
+      "slug": "hardware",
+      "name": "विश्वास हार्डवेयर",
+      "synthetic": true
+    },
+    {
+      "slug": "electricals",
+      "name": "रोशनी इलेक्ट्रिकल्स",
+      "synthetic": true
+    },
+    {
+      "slug": "utensils",
+      "name": "गृहलक्ष्मी बर्तन",
+      "synthetic": true
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# Only the manifests and backend source are needed to build the API.
+**
+!package.json
+!package-lock.json
+!backend/
+!backend/package.json
+!backend/tsconfig.json
+!backend/src/
+!backend/src/**
+!frontend/
+!frontend/package.json
+!Dockerfile.backend

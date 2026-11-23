@@ -1,0 +1,10 @@
+export const dynamic='force-dynamic';
+export function GET(){const config={apiKey:process.env.NEXT_PUBLIC_FIREBASE_API_KEY,authDomain:process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,projectId:process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,appId:process.env.NEXT_PUBLIC_FIREBASE_APP_ID,messagingSenderId:process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID};
+ if(Object.values(config).some(v=>!v))return new Response('// Push configuration incomplete',{headers:{'Content-Type':'application/javascript','Cache-Control':'no-store'}});
+ const source=`self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil((async()=>{const url=new URL(event.notification.data?.url||'/en/notifications',self.location.origin);if(url.origin!==self.location.origin)return;const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const client of clients){if(new URL(client.url).origin===url.origin){await client.navigate(url.href);await client.focus();return;}}await self.clients.openWindow(url.href);})());});
+importScripts('https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.19.0/firebase-messaging-compat.js');
+firebase.initializeApp(${JSON.stringify(config)});
+firebase.messaging().onBackgroundMessage(async payload=>{const d=payload.data||{};if(!d.notificationId)return;if(d.type==='call_stopped'){const notices=await self.registration.getNotifications({tag:'incoming:'+d.callId});notices.forEach(n=>n.close());return;}const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});if(d.type==='message'&&windows.some(w=>w.visibilityState==='visible'&&new URL(w.url).pathname.endsWith('/messages/'+d.conversationId)))return;await self.registration.showNotification(d.title||'SheharMitra',{body:d.body,tag:d.notificationId,icon:'/brand/logo-icon.png',data:{url:d.url},renotify:false});});`;
+ return new Response(source,{headers:{'Content-Type':'application/javascript','Cache-Control':'no-store','Service-Worker-Allowed':'/'}});
+}
