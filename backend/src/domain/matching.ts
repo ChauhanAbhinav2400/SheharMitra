@@ -2,6 +2,7 @@ import type { Order, Point, Quote, State, Trip } from './types.js';
 import type { Address } from '../location.js';
 
 const areaText=(value:string)=>value.normalize('NFKC').toLowerCase().replace(/[\p{P}\p{Z}\s]+/gu,' ').trim();
+const sameTownArea=(a?:Address,b?:Address)=>!!(a&&b&&a.pincode&&a.pincode===b.pincode&&areaText(a.state)===areaText(b.state)&&areaText(a.city)&&areaText(a.city)===areaText(b.city));
 // PINs cover several villages. Require the named area too, never a PIN alone.
 export function sameDeliveryArea(a?:Address,b?:Address):boolean {
   if(!a||!b||!a.pincode||a.pincode!==b.pincode||areaText(a.state)!==areaText(b.state))return false;
@@ -35,7 +36,7 @@ function nearestProjection(point: Point, route: Point[]) {
   }
   return { ...best, routeLength: traversed };
 }
-export type Match = { trip: Trip; extraKm: number|null; estimate: true; reason: 'fits_pickup_route'|'fits_address_route'; approximateLocation?: boolean; pickupAt: string; dropoffAt: string };
+export type Match = { trip: Trip; extraKm: number|null; estimate: true; reason: 'fits_pickup_route'|'fits_address_route'|'fits_town_route'; approximateLocation?: boolean; pickupAt: string; dropoffAt: string };
 function evaluateCoordinateTrip(trip: Trip, quote: Quote, destination: Partial<Point>, now = Date.now()): {match:Match|null;reason?:string} {
   const reject=(reason:string)=>({match:null,reason});
   if (!quote.pickup || !Number.isFinite(quote.pickup.lat)||!Number.isFinite(quote.pickup.lng))return reject('match_shop_location');
@@ -62,8 +63,12 @@ function evaluateCoordinateTrip(trip: Trip, quote: Quote, destination: Partial<P
 function evaluateTrip(trip:Trip,quote:Quote,destination:Partial<Point>&{addressDetails?:Address},now=Date.now()):{match:Match|null;reason?:string}{
  const geographic=evaluateCoordinateTrip(trip,quote,destination,now);
  if(geographic.match||!['match_shop_location','match_delivery_location','match_trip_location','match_direction','match_route_proximity'].includes(geographic.reason||''))return geographic;
- if(!sameDeliveryArea(quote.pickupAddressDetails,trip.originAddress)||!sameDeliveryArea(destination.addressDetails,trip.destinationAddress)||sameDeliveryArea(trip.originAddress,trip.destinationAddress))return geographic;
  const reject=(reason:string)=>({match:null,reason});
+ const pickupExact=sameDeliveryArea(quote.pickupAddressDetails,trip.originAddress),dropExact=sameDeliveryArea(destination.addressDetails,trip.destinationAddress);
+ if(!pickupExact&&!sameTownArea(quote.pickupAddressDetails,trip.originAddress))return reject('match_pickup_area');
+ if(!dropExact&&!sameTownArea(destination.addressDetails,trip.destinationAddress))return reject('match_destination_area');
+ // If both ends are in one town, locality matching must establish direction.
+ if(sameDeliveryArea(trip.originAddress,trip.destinationAddress)||(!(pickupExact&&dropExact)&&sameTownArea(trip.originAddress,trip.destinationAddress)))return reject('match_direction');
  if(!trip.available||Date.parse(trip.departureAt)<=now)return reject('match_no_upcoming');
  if([trip.departureAt,trip.arrivalAt,quote.readyAt,quote.pickupBy,quote.deliveryBy].some(t=>!Number.isFinite(Date.parse(t)))||Date.parse(trip.arrivalAt)<=Date.parse(trip.departureAt))return reject('match_invalid_schedule');
  if(!trip.categories.includes(quote.category))return reject('match_category');
@@ -74,7 +79,7 @@ function evaluateTrip(trip:Trip,quote:Quote,destination:Partial<Point>&{addressD
  if(dropoffAt>Date.parse(quote.deliveryBy))return reject('match_delivery_window');
  if(Math.max(pickupAt,Date.parse(quote.readyAt))>=dropoffAt)return reject('match_pickup_window');
  if(quote.perishable&&Date.parse(quote.readyAt)-now<quote.preparationMinutes*60000)return reject('match_preparation');
- return {match:{trip,extraKm:null,estimate:true,reason:'fits_address_route',approximateLocation:true,pickupAt:new Date(Math.max(pickupAt,Date.parse(quote.readyAt))).toISOString(),dropoffAt:trip.arrivalAt}};
+ return {match:{trip,extraKm:null,estimate:true,reason:pickupExact&&dropExact?'fits_address_route':'fits_town_route',approximateLocation:true,pickupAt:new Date(Math.max(pickupAt,Date.parse(quote.readyAt))).toISOString(),dropoffAt:trip.arrivalAt}};
 }
 export function matchTrip(trip:Trip,quote:Quote,destination:Partial<Point>&{addressDetails?:Address},now=Date.now()):Match|null{return evaluateTrip(trip,quote,destination,now).match;}
 export function matchingQuote(order:Order):Quote|undefined{

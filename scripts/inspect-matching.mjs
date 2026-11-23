@@ -8,6 +8,7 @@ import {prepareMatchingRefresh} from '../backend/src/domain/matching-locations.t
 import {emptyState,LocalStore} from '../backend/src/data/store.ts';
 dotenv.config({path:resolve('backend/.env'),quiet:true});
 const fingerprint=JSON.stringify;
+const area=a=>a?{city:a.city,locality:a.locality,pincode:a.pincode,state:a.state}:null;
 const now=Date.now(),mins=value=>value?Math.round((Date.parse(value)-now)/60000):null;
 function projection(point,route){let best={distance:Infinity,progress:0},total=0;for(let i=0;i<route.length-1;i++){const a=route[i],b=route[i+1],scale=Math.cos(point.lat*Math.PI/180),dx=(b.lng-a.lng)*scale,dy=b.lat-a.lat,denom=dx*dx+dy*dy,t=denom===0?0:Math.max(0,Math.min(1,((point.lng-a.lng)*scale*dx+(point.lat-a.lat)*dy)/denom)),distance=distanceKm(point,{lat:a.lat+t*(b.lat-a.lat),lng:a.lng+t*(b.lng-a.lng)}),length=distanceKm(a,b);if(distance<best.distance)best={distance,progress:total+t*length};total+=length;}return {...best,total};}
 try{
@@ -27,9 +28,11 @@ try{
  for(const [index,o] of state.orders.filter(o=>o.status==='awaiting_delivery_partner').entries()){
   if(process.argv.includes('--repair-preview')){const original=fingerprint(o.acceptedQuote),before=findMatchReport(state,o);const plan=await prepareMatchingRefresh(new LocalStore(state),state,o.id);plan.apply(state);const after=findMatchReport(state,o);console.log(JSON.stringify({repairPreview:{order:index+1,beforeMatches:before.matches.length,afterMatches:after.matches.length,reasons:after.reasons,approximate:after.matches.some(m=>m.approximateLocation),quoteUnchanged:fingerprint(o.acceptedQuote)===original,databaseWrites:false}}));}
   const q=matchingQuote(o);
+  if(process.argv.includes('--addresses'))console.log(JSON.stringify({areas:{order:index+1,pickup:area(q?.pickupAddressDetails),destination:area(o.destination?.addressDetails)},reasons:findMatchReport(state,o).reasons}));
   console.log(JSON.stringify({order:index+1,destinationCity:o.destination?.addressDetails?.city||o.destination?.village,quoteAccepted:!!q,pickupPresent:!!q?.pickup,destinationCoordinates:Number.isFinite(o.destination?.lat)&&Number.isFinite(o.destination?.lng),readyInMinutes:mins(q?.readyAt),pickupDeadlineInMinutes:mins(q?.pickupBy),deliveryDeadlineInMinutes:mins(q?.deliveryBy),perishable:q?.perishable,category:q?.category}));
   for(const [i,t] of state.trips.entries()){
    const u=state.users.find(u=>u.id===t.partnerId);
+   if(process.argv.includes('--addresses'))console.log(JSON.stringify({tripAreas:{trip:i+1,origin:area(t.originAddress),destination:area(t.destinationAddress)},matchedBeforeDeparture:!!(q&&matchTrip(t,q,o.destination,Date.parse(t.departureAt)-60000))}));
    if(process.argv.includes('--geocoding')&&Date.parse(t.departureAt)>now&&o.destination?.addressDetails&&t.destinationAddress){
     for(const [label,address] of [['order',o.destination.addressDetails],['trip',t.destinationAddress]]){
      const url=new URL('https://api.geoapify.com/v1/geocode/search');url.searchParams.set('apiKey',process.env.GEOAPIFY_API_KEY);url.searchParams.set('format','json');url.searchParams.set('limit','1');url.searchParams.set('filter','countrycode:in');url.searchParams.set('text',[address.line1,address.line2,address.locality,address.city,address.state,address.pincode].filter(Boolean).join(', '));

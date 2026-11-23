@@ -10,8 +10,8 @@ async function fixture(){
  const state=await seedState(),order=state.orders[0],trip=state.trips[0];
  order.status='awaiting_delivery_partner';order.acceptedQuote=structuredClone(order.quotes[0]);
  order.acceptedQuote.pickup=undefined;order.acceptedQuote.pickupAddressDetails=area('Nagina','Main market');
- order.destination={village:'Harganpur',address:'Buyer lane',addressDetails:area('Nagina','Harganpur')};
- trip.route=[];trip.originAddress=area('Nagina','Main market');trip.destinationAddress=area('Nagina','  HARGANPUR  ');
+ order.destination={village:'Harganpur',address:'Buyer lane',addressDetails:area('Harganpur','Sabzi mandi')};
+ trip.route=[];trip.originAddress=area('Nagina','Main market');trip.destinationAddress=area('Harganpur','  SABZI MANDI  ');
  const now=Date.now();trip.departureAt=new Date(now+3600000).toISOString();trip.arrivalAt=new Date(now+7200000).toISOString();
  order.acceptedQuote.readyAt=new Date(now+1800000).toISOString();order.acceptedQuote.pickupBy=new Date(now+5400000).toISOString();order.acceptedQuote.deliveryBy=new Date(now+10800000).toISOString();
  state.trips=[trip];return {state,order,trip};
@@ -26,7 +26,7 @@ test('unmapped village and PIN matches work through offer and confirmation witho
 });
 test('same PIN does not match a different village, reversed trip, different state, or category',async()=>{
  for(const change of [
-  (t:any)=>{t.destinationAddress.locality='Another village';},
+  (t:any)=>{t.destinationAddress.city='Another village';},
   (t:any)=>{t.destinationAddress.pincode='246763';},
   (t:any)=>{t.destinationAddress.state='Uttarakhand';},
   (t:any)=>{[t.originAddress,t.destinationAddress]=[t.destinationAddress,t.originAddress];},
@@ -41,4 +41,12 @@ test('area names are not limited to seeded villages and village/city field place
  assert.equal(sameDeliveryArea(area('Nagina','Harganpur'),area('Harganpur','Harganpur')),true);
  assert.equal(sameDeliveryArea(area('Nagina','A new village'),area('Nagina','A NEW VILLAGE')),true);
  assert.equal(sameDeliveryArea(area('Nagina','Market'),area('Another town','Market')),false);
+});
+
+test('different neighbourhoods in the same town and PIN remain candidates with an explicit area estimate',async()=>{
+ const {state,order,trip}=await fixture();
+ order.acceptedQuote!.pickupAddressDetails=area('Nagina','gandi murti');trip.originAddress=area('Nagina','Gandhi Chowk');
+ const result=findMatches(state,order);assert.equal(result.length,1);assert.equal(result[0].reason,'fits_town_route');assert.equal(result[0].extraKm,null);
+ order.destination.addressDetails=area('Harganpur','Another neighbourhood');assert.equal(findMatches(state,order).length,1);
+ trip.destinationAddress=area('Different village','Another neighbourhood');assert.equal(findMatches(state,order).length,0);
 });
